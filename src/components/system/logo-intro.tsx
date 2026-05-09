@@ -18,15 +18,18 @@ const HOLD_MS = 2100;
  * with a strong decelerating ease, holds for ~1.1s, then exits — Framer's
  * shared `layoutId` carries the same mark to its small slot in the navbar.
  *
+ * `show` defaults to `true` so the splash is part of the very first render
+ * (and the static-export HTML). This prevents a one-frame flash of the
+ * particle field before the overlay appears.
+ *
  * sessionStorage gating is intentionally absent during build-out so reloads
  * always replay the intro. Re-add for production.
  */
 export function LogoIntro() {
-  const [show, setShow] = useState<boolean | null>(null);
+  const [show, setShow] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setShow(true);
     const t = window.setTimeout(() => {
       setShow(false);
     }, HOLD_MS);

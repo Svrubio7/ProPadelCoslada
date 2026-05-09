@@ -99,6 +99,7 @@ export function ParticleField() {
 
     let raf = 0;
     let running = true;
+    let startTimer = 0 as number | ReturnType<typeof setTimeout>;
 
     const tick = (t: number) => {
       if (!running) return;
@@ -131,7 +132,12 @@ export function ParticleField() {
       ctx.globalAlpha = 1;
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+    // Defer the first paint by ~300ms — the LogoIntro splash is on top of
+    // the particles for ~2s, so painting earlier is wasted work and risks
+    // a one-frame flash if the splash hasn't laid down yet.
+    startTimer = window.setTimeout(() => {
+      if (running) raf = requestAnimationFrame(tick);
+    }, 300);
 
     const onVisibility = () => {
       if (document.hidden) {
@@ -147,6 +153,7 @@ export function ParticleField() {
     return () => {
       running = false;
       cancelAnimationFrame(raf);
+      window.clearTimeout(startTimer as number);
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVisibility);
     };

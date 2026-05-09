@@ -69,20 +69,88 @@ export function ScrollNarrative({
     offset: ["start start", "end end"],
   });
 
+  // Preload strategy:
+  //  1. Don't fire all 821 image requests on mount — that pins the main thread
+  //     during initial paint, breaking particles & the intro animation.
+  //  2. Use IntersectionObserver to wait until the user is within ~1.5
+  //     viewports of this section before starting any downloads.
+  //  3. Once gated, load in small batches with requestIdleCallback so the
+  //     decode work happens during browser idle time, never blocking RAF.
   useEffect(() => {
     if (totalFrames <= 0) return;
-    const imgs: HTMLImageElement[] = [];
-    let loaded = 0;
-    for (let i = 0; i < totalFrames; i++) {
-      const img = new window.Image();
-      img.src = `${framePrefix}${String(i + 1).padStart(framePadding, "0")}${frameExtension}`;
-      img.onload = () => {
-        loaded += 1;
-        setLoadedCount(loaded);
-      };
-      imgs.push(img);
-    }
+    const container = containerRef.current;
+    if (!container) return;
+
+    const imgs: HTMLImageElement[] = new Array(totalFrames);
     imagesRef.current = imgs;
+
+    let loaded = 0;
+    let cancelled = false;
+    let started = false;
+
+    const startPreload = () => {
+      if (started || cancelled) return;
+      started = true;
+
+      const BATCH = 24;
+      let next = 0;
+
+      type IdleCB = (deadline: { didTimeout: boolean; timeRemaining: () => number }) => void;
+      const ric: (cb: IdleCB) => number =
+        typeof window !== "undefined" &&
+        typeof (window as unknown as { requestIdleCallback?: unknown })
+          .requestIdleCallback === "function"
+          ? (window as unknown as { requestIdleCallback: (cb: IdleCB) => number })
+              .requestIdleCallback
+          : (cb: IdleCB) =>
+              window.setTimeout(
+                () =>
+                  cb({ didTimeout: false, timeRemaining: () => 0 }),
+                40
+              );
+
+      const loadBatch: IdleCB = () => {
+        if (cancelled) return;
+        const end = Math.min(next + BATCH, totalFrames);
+        for (let j = next; j < end; j++) {
+          if (imgs[j]) continue;
+          const img = new window.Image();
+          img.src = `${framePrefix}${String(j + 1).padStart(framePadding, "0")}${frameExtension}`;
+          img.decoding = "async";
+          img.onload = () => {
+            loaded += 1;
+            setLoadedCount(loaded);
+          };
+          imgs[j] = img;
+        }
+        next = end;
+        if (next < totalFrames) ric(loadBatch);
+      };
+
+      ric(loadBatch);
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          startPreload();
+          observer.disconnect();
+        }
+      },
+      // Start preloading when the section is within ~1.5 viewports above or below
+      { rootMargin: "150% 0px 150% 0px", threshold: 0 }
+    );
+    observer.observe(container);
+
+    // Safety fallback: if observer never fires (very tall pages, etc.),
+    // start preload after the page has had time to settle past the intro.
+    const fallback = window.setTimeout(startPreload, 4500);
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      window.clearTimeout(fallback);
+    };
   }, [totalFrames, framePrefix, frameExtension, framePadding]);
 
   useEffect(() => {
@@ -149,10 +217,10 @@ export function ScrollNarrative({
 
   return (
     <section ref={containerRef} style={{ height }} className="relative">
-      <div className="sticky top-0 flex h-[100svh] w-full items-center justify-center overflow-hidden px-4 pb-4 pt-20 md:px-8 md:py-8">
-        <div className="flex h-full w-full max-w-7xl flex-col items-center justify-center gap-3 sm:gap-5 md:flex-row md:gap-10 md:max-h-[88vh] lg:gap-16">
-          {/* LEFT: video canvas card — small on mobile, scales up on bigger screens */}
-          <div className="relative aspect-[4/3] w-full max-w-[180px] flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black shadow-[0_20px_80px_-20px_rgba(0,0,0,0.8)] sm:max-w-[220px] md:max-w-md md:rounded-2xl lg:max-w-lg xl:max-w-xl">
+      <div className="sticky top-0 flex h-[100svh] w-full items-center justify-center overflow-hidden px-4 pb-3 pt-16 md:px-8 md:py-8">
+        <div className="flex h-full w-full max-w-7xl flex-col items-center justify-center gap-2 sm:gap-4 md:flex-row md:gap-10 md:max-h-[88vh] lg:gap-16">
+          {/* LEFT: video canvas card — bigger on mobile (~65% larger), scales up further on bigger screens */}
+          <div className="relative aspect-[4/3] w-full max-w-[300px] flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black shadow-[0_20px_80px_-20px_rgba(0,0,0,0.8)] sm:max-w-[320px] md:max-w-md md:rounded-2xl lg:max-w-lg xl:max-w-xl">
             <canvas
               ref={canvasRef}
               className="absolute inset-0 block h-full w-full"
@@ -168,7 +236,7 @@ export function ScrollNarrative({
 
           {/* RIGHT: fixed-size panel container — content swaps via stacked panels */}
           <div className="relative flex w-full max-w-md flex-1 flex-col md:flex-initial md:h-[560px] lg:h-[600px]">
-            <div className="relative h-full min-h-[360px] md:min-h-0 md:h-full">
+            <div className="relative h-full min-h-0 md:min-h-0 md:h-full">
               {panels.map((panel, i) => (
                 <Panel
                   key={i}
@@ -181,7 +249,7 @@ export function ScrollNarrative({
             </div>
 
             {/* Section number indicator — under the panel */}
-            <div className="mt-3 flex items-center gap-2 md:mt-6 md:gap-3">
+            <div className="mt-2 flex items-center gap-1.5 md:mt-6 md:gap-3">
               {panels.map((_, i) => (
                 <Pip
                   key={i}
@@ -221,6 +289,8 @@ function Panel({
   const isLast = index === total - 1;
 
   // Last panel: fade in, then stay until scroll progress = 1.0 (no fade out)
+  // No x-slide on the panel itself — that was making text appear to "drift"
+  // during transitions. Pure cross-fade is cleaner.
   const opacity = useTransform(
     scrollProgress,
     isLast
@@ -233,18 +303,6 @@ function Panel({
         ],
     isLast ? [0, 1, 1] : [0, 1, 1, 0]
   );
-  const x = useTransform(
-    scrollProgress,
-    isLast
-      ? [clamp01(start), clamp01(start + fade), 1]
-      : [
-          clamp01(start),
-          clamp01(start + fade),
-          clamp01(end - fade),
-          clamp01(end),
-        ],
-    isLast ? [40, 0, 0] : [40, 0, 0, -40]
-  );
 
   // Tighten cascade so all items revealed by ~49% of slice.
   // That leaves ~43% of slice as a "hold all visible" window.
@@ -252,53 +310,49 @@ function Panel({
   const itemSpan = (0.4 * slice) / 6;
   const itemDuration = itemSpan * 1.1;
 
+  // Item reveals are pure opacity fades — no y-slide. Items appear in their
+  // final position; scrolling past the reveal point doesn't shift them further.
   const eyebrowOp = useReveal(scrollProgress, revealStart + itemSpan * 0, itemDuration);
-  const eyebrowY = useRevealY(scrollProgress, revealStart + itemSpan * 0, itemDuration);
   const titleOp = useReveal(scrollProgress, revealStart + itemSpan * 1, itemDuration);
-  const titleY = useRevealY(scrollProgress, revealStart + itemSpan * 1, itemDuration);
   const bodyOp = useReveal(scrollProgress, revealStart + itemSpan * 2, itemDuration);
-  const bodyY = useRevealY(scrollProgress, revealStart + itemSpan * 2, itemDuration);
   const featuresOp = useReveal(scrollProgress, revealStart + itemSpan * 3, itemDuration);
-  const featuresY = useRevealY(scrollProgress, revealStart + itemSpan * 3, itemDuration);
   const promoOp = useReveal(scrollProgress, revealStart + itemSpan * 4, itemDuration);
-  const promoY = useRevealY(scrollProgress, revealStart + itemSpan * 4, itemDuration);
   const ctasOp = useReveal(scrollProgress, revealStart + itemSpan * 5, itemDuration);
-  const ctasY = useRevealY(scrollProgress, revealStart + itemSpan * 5, itemDuration);
 
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col justify-center gap-2 overflow-hidden md:gap-4"
-      style={{ opacity, x }}
+      className="absolute inset-0 flex flex-col justify-center gap-1.5 overflow-hidden md:gap-4"
+      style={{ opacity }}
     >
       <motion.span
-        className="font-mono text-[9px] uppercase tracking-[0.35em] text-white/60 md:text-[10px] md:tracking-[0.4em]"
-        style={{ opacity: eyebrowOp, y: eyebrowY }}
+        className="font-mono text-[9px] uppercase tracking-[0.3em] text-white/60 md:text-[10px] md:tracking-[0.4em]"
+        style={{ opacity: eyebrowOp }}
       >
         {panel.eyebrow}
       </motion.span>
 
       <motion.h2
-        className="text-2xl font-light leading-[1.05] tracking-[-0.03em] text-white sm:text-3xl md:text-4xl lg:text-5xl"
-        style={{ opacity: titleOp, y: titleY }}
+        className="text-xl font-light leading-[1.08] tracking-[-0.02em] text-white sm:text-3xl md:text-4xl lg:text-5xl"
+        style={{ opacity: titleOp }}
       >
         {panel.title}
       </motion.h2>
 
       <motion.p
-        className="text-xs font-light leading-relaxed text-white/75 sm:text-sm md:text-base"
-        style={{ opacity: bodyOp, y: bodyY }}
+        className="text-[11px] font-light leading-snug text-white/75 sm:text-sm md:text-base md:leading-relaxed"
+        style={{ opacity: bodyOp }}
       >
         {panel.body}
       </motion.p>
 
       {panel.features ? (
         <motion.ul
-          className="flex flex-col gap-1 text-[11px] text-white/70 sm:text-xs md:gap-1.5 md:text-sm"
-          style={{ opacity: featuresOp, y: featuresY }}
+          className="flex flex-col gap-0.5 text-[10px] text-white/70 sm:text-xs md:gap-1.5 md:text-sm"
+          style={{ opacity: featuresOp }}
         >
           {panel.features.map((f, j) => (
-            <li key={j} className="flex items-start gap-2 md:gap-2.5">
-              <span className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-white/60" />
+            <li key={j} className="flex items-start gap-1.5 leading-snug md:gap-2.5">
+              <span className="mt-1 inline-block h-1 w-1 shrink-0 rounded-full bg-white/60 md:mt-1.5" />
               <span>{f}</span>
             </li>
           ))}
@@ -307,10 +361,10 @@ function Panel({
 
       {panel.promo ? (
         <motion.div
-          className="rounded-lg border border-white/15 bg-white/[0.03] p-2.5 md:rounded-xl md:p-3.5"
-          style={{ opacity: promoOp, y: promoY }}
+          className="rounded-md border border-white/15 bg-white/[0.03] p-2 md:rounded-xl md:p-3.5"
+          style={{ opacity: promoOp }}
         >
-          <div className="flex items-baseline justify-between gap-3">
+          <div className="flex items-baseline justify-between gap-2 md:gap-3">
             <span className="font-mono text-[8px] uppercase tracking-[0.25em] text-white/50 md:text-[9px] md:tracking-[0.3em]">
               {panel.promo.label}
             </span>
@@ -320,7 +374,7 @@ function Panel({
               </span>
             ) : null}
           </div>
-          <ul className="mt-1.5 flex flex-col gap-0.5 text-[11px] font-light text-white sm:text-xs md:mt-2 md:text-sm">
+          <ul className="mt-1 flex flex-col gap-0.5 text-[10px] font-light leading-snug text-white sm:text-xs md:mt-2 md:text-sm">
             {panel.promo.items.map((it, j) => (
               <li key={j}>{it}</li>
             ))}
@@ -329,8 +383,8 @@ function Panel({
       ) : null}
 
       <motion.div
-        className="flex flex-wrap gap-2 pt-0.5 md:gap-2.5 md:pt-1"
-        style={{ opacity: ctasOp, y: ctasY }}
+        className="flex flex-wrap gap-1.5 pt-0 md:gap-2.5 md:pt-1"
+        style={{ opacity: ctasOp }}
       >
         {panel.ctas.map((cta, j) => (
           <CTAButton key={j} cta={cta} />
@@ -342,7 +396,7 @@ function Panel({
 
 function CTAButton({ cta }: { cta: NarrativeCTA }) {
   const cls = [
-    "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-medium transition-colors md:gap-2 md:px-4 md:py-2 md:text-sm",
+    "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-medium transition-colors md:gap-2 md:px-4 md:py-2 md:text-sm",
     cta.primary
       ? "bg-white text-[#050505] hover:bg-white/90"
       : "border border-white/30 text-white hover:border-white/70",
@@ -435,13 +489,3 @@ function useReveal(
   return useTransform(progress, [a, safeB], [0, 1]);
 }
 
-function useRevealY(
-  progress: MotionValue<number>,
-  start: number,
-  duration: number
-) {
-  const a = clamp01(start);
-  const b = clamp01(start + duration);
-  const safeB = b > a ? b : Math.min(1, a + 0.001);
-  return useTransform(progress, [a, safeB], [20, 0]);
-}
