@@ -19,11 +19,27 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const title = "Pro Padel Coslada — Exclusividad, Deporte y Estilo";
+const description =
+  "Club de pádel premium en Coslada. 9 pistas panorámicas, escuela, gimnasio, restaurante y eventos.";
+
 export const metadata: Metadata = {
-  title: "Pro Padel Coslada — Exclusividad, Deporte y Estilo",
-  description:
-    "Club de pádel premium en Coslada. 9 pistas panorámicas, escuela, gimnasio, restaurante y eventos.",
+  title,
+  description,
   metadataBase: new URL("https://propadelcoslada.com"),
+  openGraph: {
+    title,
+    description,
+    url: "https://propadelcoslada.com",
+    siteName: "Pro Padel Coslada",
+    locale: "es_ES",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export default function RootLayout({
