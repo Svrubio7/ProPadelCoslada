@@ -1,11 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
-import { TextFlip } from "@/components/animations/text-flip";
 import { Magnetic } from "@/components/animations/magnetic";
+import { LightButton } from "@/components/system/light-tabs";
 
 const easeOut = [0.22, 1, 0.36, 1] as const;
 
@@ -78,18 +77,9 @@ export function SectionPage({
               transition={{ duration: 0.8, ease: easeOut, delay: 1.1 }}
             >
               <Magnetic strength={0.3}>
-                <Link
-                  href={cta.href}
-                  target={cta.external ? "_blank" : undefined}
-                  rel={cta.external ? "noopener noreferrer" : undefined}
-                  data-cursor="pointer"
-                  className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.02] px-5 py-2.5 text-xs font-medium text-white backdrop-blur-md transition-colors hover:border-white/60 sm:gap-3 sm:px-7 sm:py-3 sm:text-sm"
-                >
-                  <TextFlip>{cta.label}</TextFlip>
-                  <span className="transition-transform duration-300 group-hover:translate-x-1">
-                    →
-                  </span>
-                </Link>
+                <LightButton href={cta.href} external={cta.external} arrow>
+                  {cta.label}
+                </LightButton>
               </Magnetic>
             </motion.div>
           ) : null}
@@ -151,18 +141,13 @@ export function SectionPage({
             ¿Listo para jugar? Reserva tu pista en segundos.
           </p>
           <Magnetic strength={0.35}>
-            <a
+            <LightButton
               href="https://playtomic.com/clubs/pro-padel-coslada"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-cursor="pointer"
-              className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.02] px-6 py-3 text-xs font-medium text-white backdrop-blur-md transition-colors hover:border-white/60 sm:gap-3 sm:px-8 sm:py-3.5 sm:text-sm"
+              external
+              arrow
             >
-              <TextFlip>Reserva Ya</TextFlip>
-              <span className="transition-transform duration-300 group-hover:translate-x-1">
-                →
-              </span>
-            </a>
+              Reserva Ya
+            </LightButton>
           </Magnetic>
         </div>
       </section>

@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import {
   motion,
   useScroll,
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import { TextFlip } from "@/components/animations/text-flip";
 import { Magnetic } from "@/components/animations/magnetic";
+import { LightButton } from "@/components/system/light-tabs";
 
 export interface NarrativeCTA {
   href: string;
@@ -395,32 +394,17 @@ function Panel({
 }
 
 function CTAButton({ cta }: { cta: NarrativeCTA }) {
-  const cls = [
-    "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-medium transition-colors md:gap-2 md:px-4 md:py-2 md:text-sm",
-    cta.primary
-      ? "bg-white text-[#050505] hover:bg-white/90"
-      : "border border-white/30 text-white hover:border-white/70",
-  ].join(" ");
-
   return (
     <Magnetic strength={0.25}>
-      {cta.external ? (
-        <a
-          href={cta.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-cursor="pointer"
-          className={cls}
-        >
-          <TextFlip>{cta.label}</TextFlip>
-          <span>→</span>
-        </a>
-      ) : (
-        <Link href={cta.href} data-cursor="pointer" className={cls}>
-          <TextFlip>{cta.label}</TextFlip>
-          <span>→</span>
-        </Link>
-      )}
+      <LightButton
+        href={cta.href}
+        external={cta.external}
+        variant={cta.primary ? "solid" : "ghost"}
+        size="sm"
+        arrow
+      >
+        {cta.label}
+      </LightButton>
     </Magnetic>
   );
 }

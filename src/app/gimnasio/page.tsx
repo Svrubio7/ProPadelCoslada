@@ -28,10 +28,10 @@ export default function GimnasioPage() {
         </>
       }
       images={[
+        "/images/club/gimnasio-01.jpg",
+        "/images/club/gimnasio-02.jpg",
+        "/images/club/gimnasio-03.jpg",
         "/images/club/club-10.jpg",
-        "/images/club/club-12.jpg",
-        "/images/club/club-11.jpg",
-        "/images/club/club-09.jpg",
       ]}
       cta={{
         href: "mailto:info@propadelcoslada.com?subject=Gimnasio",

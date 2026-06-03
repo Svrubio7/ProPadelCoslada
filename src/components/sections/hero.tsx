@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { TextFlip } from "@/components/animations/text-flip";
 import { Magnetic } from "@/components/animations/magnetic";
+import { LightButton } from "@/components/system/light-tabs";
 
 const TAGLINE = ["Exclusividad,", "Deporte", "y", "Estilo", "en", "Coslada"];
 const easeOut = [0.22, 1, 0.36, 1] as const;
@@ -67,26 +67,13 @@ export function Hero() {
           className="mt-6"
         >
           <Magnetic strength={0.35}>
-            <a
+            <LightButton
               href="https://playtomic.com/clubs/pro-padel-coslada"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-cursor="pointer"
-              className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full border border-white/20 bg-white/[0.02] px-6 py-3 text-sm font-medium text-white backdrop-blur-md transition-colors hover:border-white/60 sm:gap-3 sm:px-8 sm:py-3.5"
+              external
+              arrow
             >
-              <motion.span
-                aria-hidden
-                className="absolute inset-0 rounded-full bg-white/[0.08]"
-                animate={{ scale: [1, 1.06, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-              />
-              <span className="relative">
-                <TextFlip>Reserva Ya</TextFlip>
-              </span>
-              <span className="relative transition-transform duration-300 group-hover:translate-x-1">
-                →
-              </span>
-            </a>
+              Reserva Ya
+            </LightButton>
           </Magnetic>
         </motion.div>
       </div>

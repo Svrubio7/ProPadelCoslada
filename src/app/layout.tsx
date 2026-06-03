@@ -5,7 +5,7 @@ import { SmoothScroll } from "@/components/system/smooth-scroll";
 import { Cursor } from "@/components/system/cursor";
 import { LogoIntro } from "@/components/system/logo-intro";
 import { SiteHeader } from "@/components/system/site-header";
-import { ParticleField } from "@/components/system/particle-field";
+import { WaveBackground } from "@/components/system/wave-background";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +36,7 @@ export default function RootLayout({
     >
       <body>
         <SmoothScroll>
-          <ParticleField />
+          <WaveBackground />
           <Cursor />
           <LogoIntro />
           <SiteHeader />

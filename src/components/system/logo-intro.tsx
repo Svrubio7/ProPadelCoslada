@@ -42,7 +42,10 @@ export function LogoIntro() {
         <motion.div
           key="ppc-intro-overlay"
           aria-hidden
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#050505]"
+          // pointer-events-none: the splash is purely decorative. If the
+          // shared-layout exit ever fails to unmount it (observed on reload
+          // mid-page), it must never sit on top of the page swallowing clicks.
+          className="pointer-events-none fixed inset-0 z-[9999] flex items-center justify-center bg-[#050505]"
           initial={{ opacity: 1 }}
           exit={{
             opacity: 0,
@@ -61,7 +64,7 @@ export function LogoIntro() {
             }}
           >
             <Image
-              src="/images/logo.jpg"
+              src="/images/logo.png"
               alt="Pro Padel Coslada"
               width={520}
               height={520}

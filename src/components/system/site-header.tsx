@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { TextFlip } from "@/components/animations/text-flip";
 import { Magnetic } from "@/components/animations/magnetic";
+import { LightTabs, LightButton } from "@/components/system/light-tabs";
 
 const NAV_LINKS = [
   { href: "/instalaciones", label: "Instalaciones" },
@@ -42,17 +43,24 @@ export function SiteHeader() {
   return (
     <>
       <motion.header
-        className={[
-          "fixed inset-x-0 top-0 z-50 transition-colors duration-500",
-          scrolled
-            ? "bg-[#050505]/70 backdrop-blur-xl border-b border-white/5"
-            : "bg-transparent",
-        ].join(" ")}
+        className="fixed inset-x-0 top-0 z-50"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 md:h-24">
+        {/* Seamless scroll backdrop — gradient + blur both fade out through a
+            bottom mask, so there's no hard edge or border line on scroll. */}
+        <div
+          aria-hidden
+          className={[
+            "pointer-events-none absolute inset-0 -z-10 backdrop-blur-md transition-opacity duration-500",
+            "bg-gradient-to-b from-[#050505]/90 via-[#050505]/50 to-transparent",
+            "[mask-image:linear-gradient(to_bottom,black_50%,transparent)]",
+            "[-webkit-mask-image:linear-gradient(to_bottom,black_50%,transparent)]",
+            scrolled ? "opacity-100" : "opacity-0",
+          ].join(" ")}
+        />
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 md:h-20">
           <Link
             href="/"
             className="flex items-center"
@@ -62,49 +70,27 @@ export function SiteHeader() {
             <Magnetic strength={0.3}>
               <motion.div layoutId="ppc-mark" className="relative">
                 <Image
-                  src="/images/logo.jpg"
+                  src="/images/logo.png"
                   alt="Pro Padel Coslada"
                   width={120}
                   height={120}
                   priority
-                  className="h-11 w-11 select-none rounded-xl sm:h-14 sm:w-14 sm:rounded-2xl md:h-20 md:w-20"
+                  className="h-[52px] w-[52px] select-none rounded-xl sm:h-[57px] sm:w-[57px] sm:rounded-2xl md:h-[72px] md:w-[72px]"
                 />
               </motion.div>
             </Magnetic>
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
-            {NAV_LINKS.map(({ href, label }) => {
-              const active = pathname === href;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  data-cursor="pointer"
-                  className="group relative text-sm font-light text-white/70 transition-colors hover:text-white"
-                >
-                  <TextFlip>{label}</TextFlip>
-                  <span
-                    className={[
-                      "absolute -bottom-1 left-0 h-px bg-white transition-[width] duration-500 ease-out",
-                      active ? "w-full" : "w-0 group-hover:w-full",
-                    ].join(" ")}
-                  />
-                </Link>
-              );
-            })}
-          </nav>
+          <LightTabs tabs={NAV_LINKS} className="hidden md:flex" />
 
           <Magnetic strength={0.25} className="hidden md:inline-flex">
-            <a
+            <LightButton
               href="https://playtomic.com/clubs/pro-padel-coslada"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-cursor="pointer"
-              className="rounded-full border border-white/20 px-5 py-2 text-xs font-medium text-white transition-colors hover:border-white/60"
+              external
+              size="sm"
             >
-              <TextFlip>Reserva Ya</TextFlip>
-            </a>
+              Reserva Ya
+            </LightButton>
           </Magnetic>
 
           <button
@@ -133,7 +119,7 @@ export function SiteHeader() {
             <div className="flex h-full flex-col justify-between p-6">
               <div className="flex items-center justify-between">
                 <Image
-                  src="/images/logo.jpg"
+                  src="/images/logo.png"
                   alt=""
                   width={36}
                   height={36}

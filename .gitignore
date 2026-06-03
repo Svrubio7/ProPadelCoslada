@@ -44,3 +44,5 @@ next-env.d.ts
 /storyboard/
 /public/video/
 *.mp4
+
+.vercel

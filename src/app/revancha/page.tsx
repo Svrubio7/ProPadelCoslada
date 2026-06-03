@@ -28,12 +28,12 @@ export default function RevanchaPage() {
         </>
       }
       images={[
+        "/images/club/revancha-01.jpg",
+        "/images/club/revancha-02.jpg",
         "/images/club/club-07.jpg",
         "/images/club/club-08.jpg",
         "/images/club/club-06.jpg",
-        "/images/club/club-05.jpg",
         "/images/club/club-04.jpg",
-        "/images/club/club-03.jpg",
       ]}
       cta={{
         href: "tel:+34623754902",

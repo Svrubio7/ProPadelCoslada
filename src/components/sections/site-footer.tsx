@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { TextFlip } from "@/components/animations/text-flip";
+import { LightButton } from "@/components/system/light-tabs";
 
 export function SiteFooter() {
   return (
@@ -46,15 +47,14 @@ export function SiteFooter() {
           >
             info@propadelcoslada.com
           </a>
-          <a
+          <LightButton
             href="https://playtomic.com/clubs/pro-padel-coslada"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-cursor="pointer"
-            className="mt-2 inline-flex w-fit rounded-full border border-white/20 px-4 py-2 text-xs hover:border-white/60"
+            external
+            size="sm"
+            className="mt-2 w-fit"
           >
-            <TextFlip>Reserva Ya</TextFlip>
-          </a>
+            Reserva Ya
+          </LightButton>
         </div>
       </div>
 
